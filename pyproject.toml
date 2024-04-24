@@ -12,9 +12,13 @@ license = "MIT License"
 ###############################################################################
 [tool.poetry.dependencies]
 python = '^3.10'
+pandas = "^2.2.1"
+tqdm = "^4.66.2"
+loguru = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
+jupyter = "^1.0.0"
 
 # Запускаем coverage тестов только на папку src/
 [tool.coverage.run]

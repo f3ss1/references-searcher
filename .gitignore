@@ -1,3 +1,11 @@
+ideas.md
+logs/
+
+/data
+/arxiv_data_result.json
+/semantic_result.json
+/notebooks/data_obtainer.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
