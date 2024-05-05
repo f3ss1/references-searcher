@@ -1,5 +1,8 @@
 ideas.md
 logs/
+catboost_info
+notebooks/test.ipynb
+pytest_experiments
 
 /data
 /arxiv_data_result.json
