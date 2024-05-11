@@ -3,6 +3,7 @@ logs/
 catboost_info
 notebooks/test.ipynb
 pytest_experiments
+wandb/
 
 /data
 /arxiv_data_result.json

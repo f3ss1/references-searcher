@@ -1,5 +1,5 @@
 from .arxiv_data import Paper, clear_line, generate_dataframe, get_lines
-from .get_semantic_data import get_semantic_data
+from .arxiv_dataset import ArxivDataset
 
 
 __all__ = [
@@ -7,5 +7,5 @@ __all__ = [
     "get_lines",
     "clear_line",
     "generate_dataframe",
-    "get_semantic_data",
+    "ArxivDataset",
 ]
