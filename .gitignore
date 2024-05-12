@@ -4,6 +4,7 @@ catboost_info
 notebooks/test.ipynb
 pytest_experiments
 wandb/
+model_weights/
 
 /data
 /arxiv_data_result.json
