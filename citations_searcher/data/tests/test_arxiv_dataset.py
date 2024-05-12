@@ -27,38 +27,43 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", model_max_length=
 
 
 def test_dataset_creation():
-    ArxivDataset(sample_positive_dataframe, sample_negative_dataframe, mode="classification", tokenizer=tokenizer)
+    ArxivDataset(
+        sample_positive_dataframe,
+        mode="classification",
+        negative_pairs=sample_negative_dataframe,
+        tokenizer=tokenizer,
+    )
 
 
 def test_get_item():
     dataset = ArxivDataset(
         sample_positive_dataframe,
-        sample_negative_dataframe,
         mode="classification",
+        negative_pairs=sample_negative_dataframe,
         tokenizer=tokenizer,
     )
     dataset_output = dataset[0]
-    assert (dataset_output[0] == sample_positive_dataframe.iloc[0]).all()
+    assert dataset_output[0] == sample_positive_dataframe.iloc[0].to_dict()
     assert dataset_output[1]
 
 
 def test_negative_jump():
     dataset = ArxivDataset(
         sample_positive_dataframe,
-        sample_negative_dataframe,
         mode="classification",
+        negative_pairs=sample_negative_dataframe,
         tokenizer=tokenizer,
     )
     dataset_output = dataset[1]
-    assert (dataset_output[0] == sample_negative_dataframe.iloc[0]).all()
+    assert dataset_output[0] == sample_negative_dataframe.iloc[0].to_dict()
     assert not dataset_output[1]
 
 
 def test_dataset_creation_no_target():
     ArxivDataset(
         sample_positive_dataframe,
-        sample_negative_dataframe,
         mode="classification",
+        negative_pairs=sample_negative_dataframe,
         tokenizer=tokenizer,
         return_target=False,
     )
@@ -67,18 +72,18 @@ def test_dataset_creation_no_target():
 def test_get_item_no_target():
     dataset = ArxivDataset(
         sample_positive_dataframe,
-        sample_negative_dataframe,
         mode="classification",
+        negative_pairs=sample_negative_dataframe,
         return_target=False,
     )
-    assert (dataset[0] == sample_positive_dataframe.iloc[0]).all()
+    assert dataset[0] == sample_positive_dataframe.iloc[0].to_dict()
 
 
 def test_collate_fn():
     dataset = ArxivDataset(
         sample_positive_dataframe,
-        sample_negative_dataframe,
         mode="classification",
+        negative_pairs=sample_negative_dataframe,
         return_target=False,
     )
     print(dataset._collate_fn([dataset[0], dataset[1]]))

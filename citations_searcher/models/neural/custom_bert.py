@@ -79,3 +79,34 @@ class CustomBert(nn.Module):
         processed_embeddings = self.embedding_processor(embeddings)
         logits = self.classifier(processed_embeddings)
         return self.softmax(logits) if return_probabilities else logits
+
+    def triplet(
+        self,
+        anchor_text: dict,
+        positive_text: dict,
+        negative_text: dict,
+        anchor_title: dict | None = None,
+        positive_title: dict | None = None,
+        negative_title: dict | None = None,
+    ):
+        if self.concatenate_title and (anchor_title is None or positive_title is None or negative_title is None):
+            raise ValueError("Titles are expected but not provided.")
+        if not self.concatenate_title and (
+            anchor_title is not None or positive_title is not None or negative_title is not None
+        ):
+            raise ValueError("Titles are not expected but were provided.")
+
+        bert_anchor_text = self.bert(**anchor_text).last_hidden_state[:, 0, :]
+        bert_positive_text = self.bert(**positive_text).last_hidden_state[:, 0, :]
+        bert_negative_text = self.bert(**negative_text).last_hidden_state[:, 0, :]
+
+        if self.concatenate_title:
+            bert_anchor_title = self.bert(**anchor_title).last_hidden_state[:, 0, :]
+            bert_positive_title = self.bert(**positive_title).last_hidden_state[:, 0, :]
+            bert_negative_title = self.bert(**negative_title).last_hidden_state[:, 0, :]
+
+            bert_anchor_text = torch.cat((bert_anchor_text, bert_anchor_title), dim=1)
+            bert_positive_text = torch.cat((bert_positive_text, bert_positive_title), dim=1)
+            bert_negative_text = torch.cat((bert_negative_text, bert_negative_title), dim=1)
+
+        return bert_anchor_text, bert_positive_text, bert_negative_text

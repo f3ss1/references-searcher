@@ -6,7 +6,7 @@ import wandb
 
 from typing import Literal
 
-from citations_searcher.utils import generate_device
+from citations_searcher.utils import generate_device, log_with_message
 from citations_searcher import logger
 from citations_searcher.metrics import MetricCalculator
 
@@ -125,6 +125,78 @@ class Trainer:
         logger.debug(f"Model train scores: {result}")
 
         return result
+
+    def pretrain(
+        self,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        pretrain_dataloader: torch.utils.data.DataLoader,
+        pretrain_criterion: torch.nn.Module = torch.nn.TripletMarginLoss(),
+        n_epochs: int = 10,
+        scheduler: torch.optim.lr_scheduler._LRScheduler = None,
+        verbose: bool = True,
+        watch: bool = True,
+    ) -> None:
+
+        for epoch in range(1, n_epochs + 1):
+            with log_with_message(f"epoch {epoch}/{n_epochs}"):
+                # Train
+                epoch_pretrain_state = self._pretrain_single_epoch(
+                    model=model,
+                    pretrain_optimizer=optimizer,
+                    pretrain_dataloader=pretrain_dataloader,
+                    pretrain_criterion=pretrain_criterion,
+                    verbose=verbose,
+                )
+
+                current_epoch_scores = {"pretrain": epoch_pretrain_state}
+
+                if scheduler is not None:
+                    scheduler.step()
+
+                if watch:
+                    try:
+                        self._watcher_command(current_epoch_scores)
+                    except Exception as e:
+                        logger.error(f"Error loading to watcher after train at epoch {epoch}!")
+                        raise e
+
+    def _pretrain_single_epoch(
+        self,
+        model: torch.nn.Module,
+        pretrain_optimizer: torch.optim.Optimizer,
+        pretrain_dataloader: torch.utils.data.DataLoader,
+        pretrain_criterion: torch.nn.Module,
+        verbose: bool,
+    ) -> dict[str, float]:
+
+        model.train()
+        pbar = tqdm(pretrain_dataloader, leave=False, desc="Pretraining model") if verbose else pretrain_dataloader
+        pretrain_loss = 0.0
+        scaler = GradScaler()
+
+        for items_batch in pbar:
+            items_batch = {key: tensor.to(self.device) for key, tensor in items_batch.items()}
+
+            pretrain_optimizer.zero_grad()
+            with autocast():
+                anchor_embedding, positive_embedding, negative_embedding = model.triplet(**items_batch)
+                loss = pretrain_criterion(anchor_embedding, positive_embedding, negative_embedding)
+
+            # We use running loss to avoid double-running through the train dataset. This does not
+            #   provide objective scores, but is good enough compared to time-effectiveness.
+            pretrain_loss += loss.item() * len(anchor_embedding)
+
+            scaler.scale(loss).backward()
+            scaler.step(pretrain_optimizer)
+            scaler.update()
+
+        pretrain_loss /= len(pretrain_dataloader.dataset)
+        logger.debug(f"Model pretrain loss: {pretrain_loss}")
+
+        return {
+            "pretrain_loss": pretrain_loss,
+        }
 
     @torch.no_grad()
     def evaluate(
