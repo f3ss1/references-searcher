@@ -2,10 +2,52 @@ from pathlib import Path
 import torch
 import numpy as np
 import random
+from contextlib import ContextDecorator
+from functools import wraps
+import time
 
 from collections.abc import Hashable
 
 from citations_searcher import logger
+
+
+class log_with_message(ContextDecorator):
+    def __init__(self, message, log_time=True):
+        self.message = message
+        self.log_time = log_time
+        self.start_time = None
+
+    def __enter__(self):
+        logger.info(f"Started {self.message}.")
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is not None:
+            logger.exception("An exception occurred:")
+        else:
+            elapsed_time = time.time() - self.start_time
+            if self.log_time:
+
+                hours, rem = divmod(elapsed_time, 3600)
+                minutes, seconds = divmod(rem, 60)
+
+                time_str = (
+                    f"{int(hours)}h {int(minutes)}m {seconds:.2f}s"
+                    if hours
+                    else f"{int(minutes)}m {seconds:.2f}s" if minutes else f"{seconds:.2f}s"
+                )
+                logger.info(f"Finished {self.message}. Time taken: {time_str}.")
+            else:
+                logger.info(f"Finished {self.message}.")
+
+    def __call__(self, func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+
+        return wrapped
 
 
 def get_safe_save_path(
