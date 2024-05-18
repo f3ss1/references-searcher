@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reference Predictions</title>
+</head>
+<body>
+    <h1>Predicted References</h1>
+    <ul>
+        {% for prediction in predictions %}
+            <li>{{ prediction }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'predict_references' %}">Predict Again</a>
+</body>
+</html>

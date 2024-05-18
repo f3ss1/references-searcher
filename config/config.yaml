@@ -1,0 +1,10 @@
+defaults:
+  - model: bert
+  - _self_
+
+random_seed: 42
+use_cuda_for_train: true
+use_cuda_for_inference: true
+
+n_predictions: int = 5,
+n_candidates: int = 10,

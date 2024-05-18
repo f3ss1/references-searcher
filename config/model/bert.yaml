@@ -1,0 +1,40 @@
+type: bert
+
+bert_model:
+  dropout_prob: 0.1
+  title_process_mode: "separate"
+  bert_model_name: "bert-base-uncased"
+  mode: finetune
+
+use_watcher: true
+
+pretrain:
+  execute: true
+  dataloader:
+      num_workers: 4
+      pin_memory: true
+      batch_size: 4
+  optimizer:
+      lr: 0.00001
+  data:
+      cutoff: none
+  n_epochs: 2
+  save_path: "model_weights/pretrained_bert_core.pth"
+
+train:
+  dataloaders:
+      num_workers: 4
+      pin_memory: true
+      batch_size: 4
+  optimizer:
+      lr: 0.00001
+  data:
+      cutoff: 50000
+      val_size: 0.2
+  n_epochs: 2
+  use_triplet_pretrain: true
+  save_path: "model_weights/pretrained_bert_model.pth"
+
+inference:
+  batch_size: 4
+

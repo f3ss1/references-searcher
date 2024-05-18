@@ -5,6 +5,7 @@ notebooks/test.ipynb
 pytest_experiments
 wandb/
 model_weights/
+outputs/
 
 /data
 /arxiv_data_result.json

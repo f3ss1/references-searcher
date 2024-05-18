@@ -1,14 +1,14 @@
 import torch
 
-from citations_searcher.data import ArxivDataset
-from citations_searcher.models import CustomBert, Trainer
+from references_searcher.data import ArxivDataset
+from references_searcher.models import CustomBert, Trainer
 
 from sqlalchemy import create_engine, text
 import pandas as pd
 import wandb
 
-from citations_searcher.constants import POSTGRES_URL, PROJECT_ROOT
-from citations_searcher.utils import seed_everything, generate_device
+from references_searcher.constants import POSTGRES_URL, PROJECT_ROOT
+from references_searcher.utils import seed_everything, generate_device
 
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
@@ -78,7 +78,7 @@ trainer = Trainer(watcher=watcher, device=DEVICE)
 trainer.pretrain(model, optimizer, pretrain_dataloader, n_epochs=4)
 
 # TODO: Save only bert core model
-torch.save(model.state_dict(), PROJECT_ROOT / "model_weights/pretrained_model.pth")
+torch.save(model.bert.state_dict(), PROJECT_ROOT / "model_weights/pretrained_bert.pth")
 
 if watcher is not None:
     wandb.finish()
