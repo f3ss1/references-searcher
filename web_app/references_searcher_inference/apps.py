@@ -16,7 +16,7 @@ warnings.simplefilter("ignore", FutureWarning)
 
 class ReferenceSearcherInferenceConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "reference_searcher_inference"
+    name = "references_searcher_inference"
     inferencer = None
     has_run = False
 

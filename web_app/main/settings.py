@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "reference_searcher_inference",
+    "references_searcher_inference",
 ]
 
 MIDDLEWARE = [

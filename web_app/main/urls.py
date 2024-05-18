@@ -22,5 +22,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("predict/", include("reference_searcher_inference.urls")),
+    path("predict/", include("references_searcher_inference.urls")),
 ]

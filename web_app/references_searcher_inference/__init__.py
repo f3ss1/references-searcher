@@ -1,0 +1,1 @@
+default_app_config = "references_searcher_inference.apps.ReferenceSearcherInferenceConfig"
