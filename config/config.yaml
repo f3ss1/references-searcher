@@ -4,7 +4,11 @@ defaults:
 
 random_seed: 42
 use_cuda_for_train: true
-use_cuda_for_inference: true
 
-n_predictions: int = 5,
-n_candidates: int = 10,
+inference:
+  use_cuda_for_inference: true
+  n_predictions: 5
+  n_candidates: 10
+
+  prefer_saved_matrix: true
+  references_embeddings_save_path: "model_weights/references_embeddings.pth"

@@ -7,7 +7,15 @@
     <h1>Predicted References</h1>
     <ul>
         {% for prediction in predictions %}
-            <li>{{ prediction }}</li>
+            <li>
+                <a href="{{ prediction.arxiv_link }}">
+                    {% if prediction.title %}
+                        {{ prediction.title }}
+                    {% else %}
+                        {{ prediction.arxiv_id }}
+                    {% endif %}
+                </a>
+            </li>
         {% endfor %}
     </ul>
     <a href="{% url 'predict_references' %}">Predict Again</a>
