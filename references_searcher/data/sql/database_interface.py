@@ -44,6 +44,7 @@ class DatabaseInterface:
         with self.engine.connect() as conn:
             positive_references = pd.read_sql_query(text(positive_query), conn)
 
+        print(positive_references.head())
         if cutoff is not None:
             return positive_references.iloc[:cutoff]
         return positive_references

@@ -48,7 +48,7 @@ class Inferencer:
         self.n_predictions = n_predictions
         self.n_candidates = n_candidates
 
-        self.allowed_references = None
+        self.references = None
         self.references_embeddings = None
         self.dataset = None
         self.is_fit = False
@@ -56,28 +56,51 @@ class Inferencer:
     @log_with_message("building embeddings for potential references")
     def fit(
         self,
-        allowed_references: pd.DataFrame,
+        references: pd.DataFrame,
         prefer_saved_matrix: bool = True,
         references_embeddings_save_path: str | Path | None = None,
         verbose: bool = True,
     ):
-        self.allowed_references = allowed_references
+        self.references = references
+        if isinstance(references_embeddings_save_path, str):
+            references_embeddings_save_path = Path(references_embeddings_save_path)
 
+        absolute_file_path = None
         if references_embeddings_save_path is not None:
+            if (
+                references_embeddings_save_path.suffix == ".pth"
+                and isinstance(
+                    self.embedding_model,
+                    CustomCatboostClassifier,
+                )
+                or references_embeddings_save_path.suffix == ".npy"
+                and isinstance(
+                    self.embedding_model,
+                    CustomBert,
+                )
+            ):
+                raise ValueError(
+                    f"The embedding model is {type(self.embedding_model)},"
+                    f" but path with '{references_embeddings_save_path.suffix}' extension is provided!",
+                )
             absolute_file_path = PROJECT_ROOT / references_embeddings_save_path
-        else:
-            absolute_file_path = None
 
         if prefer_saved_matrix:
             if absolute_file_path.exists():
-                logger.info(f"Using saved embeddings matrix at path {absolute_file_path}")
-                self.references_embeddings = torch.load(absolute_file_path)
-                if len(self.references_embeddings) != len(allowed_references):
+                logger.info(f"Using saved embeddings matrix at path {absolute_file_path}.")
+                if isinstance(self.embedding_model, CustomBert):
+                    self.references_embeddings = torch.load(absolute_file_path)
+                else:
+                    self.references_embeddings = np.load(absolute_file_path)
+
+                if len(self.references_embeddings) != len(references):
                     raise ValueError(
-                        "The length of the loaded embeddings does not match the length of allowed references.",
+                        "The length of the loaded embeddings does not match the length of references.",
                     )
+
                 self.is_fit = True
                 return
+
             else:
                 logger.warning(
                     f"Did not find a file with an embeddings matrix at path {absolute_file_path}"
@@ -85,11 +108,15 @@ class Inferencer:
                 )
 
         self.references_embeddings = self._build_embeddings(
-            allowed_references,
+            references,
             verbose,
         )
         if references_embeddings_save_path is not None:
-            torch.save(self.references_embeddings, absolute_file_path)
+            if isinstance(self.references_embeddings, torch.Tensor):
+                torch.save(self.references_embeddings, absolute_file_path)
+            else:
+                np.save(absolute_file_path, self.references_embeddings)
+        self.is_fit = True
 
     def predict(
         self,
@@ -117,9 +144,9 @@ class Inferencer:
         else:
             raise ValueError("Unsupported prediction model chosen!")
 
-        arxiv_ids = list(self.allowed_references.index)
+        arxiv_ids = list(self.references.index)
         if return_title:
-            titles = self.allowed_references["title"].tolist()
+            titles = self.references["title"].tolist()
             result = [[ReferencePrediction(arxiv_ids[index], titles[index]) for index in row] for row in predictions]
 
         else:
@@ -140,7 +167,7 @@ class Inferencer:
             verbose,
         )
 
-        closest_items, pairs = self._get_pairs_to_predict(
+        closest_items, pairs = self._get_bert_pairs_to_predict(
             target_embeddings,
             self.references_embeddings,
             n_candidates,
@@ -179,8 +206,26 @@ class Inferencer:
         n_predictions: int = 5,
         n_candidates: int = 10,
         verbose: bool = True,
-    ) -> list:
-        raise NotImplementedError("Catboost model for decision is not supported yet!")
+    ) -> np.ndarray:
+        target_embeddings = self._build_embeddings(
+            target_objects,
+            verbose,
+        )
+        closest_items, pairs = self._get_catboost_pairs_to_predict(
+            target_embeddings,
+            self.references_embeddings,
+            target_objects,
+            self.references,
+            n_candidates,
+        )
+
+        pair_probabilities = self.decision_model.predict_proba(pairs)[:, 1].reshape(closest_items.shape)
+        row_indices = np.arange(closest_items.shape[0])
+        predicted_items = closest_items[
+            row_indices[:, None],
+            pair_probabilities.argsort(axis=1)[:, -n_predictions:],
+        ]
+        return predicted_items
 
     # Embeddings building
     def _build_embeddings(
@@ -234,9 +279,9 @@ class Inferencer:
         items_to_build_for: pd.DataFrame,
         verbose: bool = True,
     ) -> torch.Tensor:
-        raise NotImplementedError("Catboost model for embeddings is not supported yet!")
+        return self.embedding_model.get_embeddings(items_to_build_for, verbose)
 
-    def _get_pairs_to_predict(
+    def _get_bert_pairs_to_predict(
         self,
         target_embeddings: torch.Tensor,
         references_embeddings: torch.Tensor,
@@ -245,12 +290,37 @@ class Inferencer:
         distances = self._calculate_pairwise_euclidean_distance(target_embeddings, references_embeddings)
         closest_items = distances.argsort(axis=1)[:, :n_candidates]
         result = []
+
         for i, indices in enumerate(closest_items):
             replicated_target = target_embeddings[torch.full([len(indices)], i)]
             rows_from_references_embeddings = references_embeddings[indices]
             combined_tensor = torch.concat([replicated_target, rows_from_references_embeddings], axis=1)
             result.append(combined_tensor)
         return closest_items, torch.concat(result)
+
+    def _get_catboost_pairs_to_predict(
+        self,
+        target_embeddings,
+        references_embeddings: torch.Tensor,
+        target_metadata: pd.DataFrame,
+        references_metadata: pd.DataFrame,
+        n_candidates: int,
+    ):
+        distances = self._calculate_pairwise_euclidean_distance(target_embeddings, references_embeddings)
+        closest_items = distances.argsort(axis=1)[:, :n_candidates]
+        result = []
+
+        for i, indices in enumerate(closest_items):
+            replicated_target = (
+                target_metadata.add_prefix("paper_").iloc[np.full(len(indices), i)].reset_index(drop=True)
+            )
+            rows_from_all_objects_metadata = (
+                references_metadata.add_prefix("reference_").iloc[indices].reset_index(drop=True)
+            )
+            combined_df = pd.concat([replicated_target, rows_from_all_objects_metadata], axis=1)
+            result.append(combined_df)
+
+        return closest_items, pd.concat(result, ignore_index=True)
 
     @classmethod
     def _calculate_pairwise_euclidean_distance(

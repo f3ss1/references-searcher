@@ -5,6 +5,8 @@ defaults:
 random_seed: 42
 use_cuda_for_train: true
 
+evaluate_at_k: true
+
 inference:
   use_cuda_for_inference: true
   n_predictions: 5
