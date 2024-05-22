@@ -6,7 +6,7 @@ from references_searcher.pipelines.bert_pipelines import triplet_pretrain_bert, 
 def bert_pipeline(
     database_interface: DatabaseInterface,
     config: dict,
-):
+) -> None:
     device = generate_device(config["use_cuda_for_train"])
 
     if config["model"]["pretrain"]["execute"]:
