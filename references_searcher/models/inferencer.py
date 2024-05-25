@@ -258,7 +258,7 @@ class Inferencer:
             batch_size=self.batch_size,
             num_workers=4,
             pin_memory=True,
-            collate_fn=lambda x: self.dataset._collate_fn(x, title_process_mode=self.title_process_mode),
+            collate_fn=lambda x: self.dataset._collate_fn(x),
         )
         result = []
         for items_batch in verbose_iterator(

@@ -16,12 +16,14 @@ class Word2VecEmbeddings:
         window_size: int = 5,
         n_workers: int = -1,
         min_count: int = 0,
+        random_seed: int = 42,
     ) -> None:
         self.vector_size = vector_size
         self.window_size = window_size
         self.n_workers = n_workers
         self.min_count = min_count
         self.w2v = None
+        self.random_seed = random_seed
 
         self.preprocessor = BasicPreprocessor()
 
@@ -31,16 +33,17 @@ class Word2VecEmbeddings:
         sentences: list[str],
     ) -> None:
 
-        processed_sentences = [self.preprocessor.transform(sentence) for sentence in sentences]
+        processed_sentences = self.preprocessor.transform(sentences)
         self.w2v = Word2Vec(
             sentences=processed_sentences,
             vector_size=self.vector_size,
             window=self.window_size,
             workers=self.n_workers,
             min_count=self.min_count,
+            seed=self.random_seed,
         )
 
-    @log_with_message("constructing embeddings with word2vec model")
+    @log_with_message("constructing embeddings with word2vec model", log_level="DEBUG")
     def transform(
         self,
         sentences: list[str] | str,
@@ -53,12 +56,12 @@ class Word2VecEmbeddings:
         if isinstance(sentences, str):
             sentences = [sentences]
 
-        pbar = verbose_iterator(sentences, verbose, desc="Creating w2v embeddings", leave=False)
+        processed_sentences = self.preprocessor.transform(sentences)
+        pbar = verbose_iterator(processed_sentences, verbose, desc="Creating w2v embeddings", leave=False)
         resulting_embeddings = []
 
         for sentence in pbar:
-            tokens = self.preprocessor.transform(sentence)
-            sentence_embedding = sum([self._transform_token(token) for token in tokens]) / len(tokens)
+            sentence_embedding = sum([self._transform_token(token) for token in sentence]) / len(sentence)
             resulting_embeddings.append(sentence_embedding)
 
         return np.array(resulting_embeddings)

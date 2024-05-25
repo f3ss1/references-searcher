@@ -28,7 +28,8 @@ class DatabaseInterface:
         SQLReferences.metadata.create_all(bind=self.engine)
 
     def get_positive_references(self, cutoff: int | None = None) -> pd.DataFrame:
-        positive_query = """
+        limit_clause = f"LIMIT {cutoff}" if cutoff is not None else ""
+        positive_query = f"""
         SELECT
             paper_arxiv_id,
             paper_title,
@@ -39,18 +40,16 @@ class DatabaseInterface:
             reference_citation_count,
             reference_influential_citation_count
         FROM joined_filtered_positive_references
+        ORDER BY paper_arxiv_id
+        {limit_clause}
         """
-
         with self.engine.connect() as conn:
             positive_references = pd.read_sql_query(text(positive_query), conn)
-
-        print(positive_references.head())
-        if cutoff is not None:
-            return positive_references.iloc[:cutoff]
         return positive_references
 
     def get_negative_references(self, cutoff: int | None = None) -> pd.DataFrame:
-        negative_query = """
+        limit_clause = f"LIMIT {cutoff}" if cutoff is not None else ""
+        negative_query = f"""
         SELECT
             paper_arxiv_id,
             paper_title,
@@ -60,21 +59,23 @@ class DatabaseInterface:
             reference_citation_count,
             reference_influential_citation_count
         FROM joined_filtered_negative_references
+        ORDER BY paper_arxiv_id
+        {limit_clause}
         """
         with self.engine.connect() as conn:
             negative_references = pd.read_sql_query(text(negative_query), conn)
-
-        if cutoff is not None:
-            return negative_references.iloc[:cutoff]
         return negative_references
 
-    def get_references_metadata(self):
-        metadata_query = """
+    def get_references_metadata(self, cutoff: int | None = None) -> pd.DataFrame:
+        limit_clause = f"LIMIT {cutoff}" if cutoff is not None else ""
+        metadata_query = f"""
         SELECT
             arxiv_id,
             title,
             abstract
         FROM train_references_metadata
+        ORDER BY arxiv_id
+        {limit_clause}
         """
         with self.engine.connect() as conn:
             metadata = pd.read_sql_query(text(metadata_query), conn)

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pathlib import Path
 import torch
 import numpy as np
@@ -16,13 +18,19 @@ from references_searcher.constants import PROJECT_ROOT
 
 
 class log_with_message(ContextDecorator):
-    def __init__(self, message, log_time=True):
+    def __init__(
+        self,
+        message: str,
+        log_time: bool = True,
+        log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO",
+    ):
         self.message = message
         self.log_time = log_time
+        self.log_level = log_level
         self.start_time = None
 
     def __enter__(self):
-        logger.info(f"Started {self.message}.")
+        logger.log(self.log_level, f"Started {self.message}.")
         self.start_time = time.time()
         return self
 
@@ -32,18 +40,16 @@ class log_with_message(ContextDecorator):
         else:
             elapsed_time = time.time() - self.start_time
             if self.log_time:
-
                 hours, rem = divmod(elapsed_time, 3600)
                 minutes, seconds = divmod(rem, 60)
-
                 time_str = (
                     f"{int(hours)}h {int(minutes)}m {seconds:.2f}s"
                     if hours
                     else f"{int(minutes)}m {seconds:.2f}s" if minutes else f"{seconds:.2f}s"
                 )
-                logger.info(f"Finished {self.message}. Time taken: {time_str}.")
+                logger.log(self.log_level, f"Finished {self.message}. Time taken: {time_str}.")
             else:
-                logger.info(f"Finished {self.message}.")
+                logger.log(self.log_level, f"Finished {self.message}.")
 
     def __call__(self, func):
         @wraps(func)
@@ -57,28 +63,6 @@ class log_with_message(ContextDecorator):
 @hydra.main(version_base=None, config_path=PROJECT_ROOT / "config", config_name="config")
 def get_config(config: DictConfig) -> dict:
     return OmegaConf.to_container(config, resolve=True)
-
-
-def validate_triplet_pretrain(
-    use_pretrain: bool,
-    execute_pretrain: bool,
-    pretrain_model_path: str | None,
-) -> bool:
-    if use_pretrain:
-        if pretrain_model_path is None:
-            raise ValueError(
-                "No `pretrained_model_path` is provided in the `pretrain` section of the config"
-                " while a pretrained model is requested!",
-            )
-        if not execute_pretrain:
-            logger.warning("Using the previously triplet pretrained BERT model if available.")
-        return True
-
-    elif execute_pretrain:
-        logger.warning(
-            "The model is being pretrained, but is not later used in the train sequence! A mistake in the config?",
-        )
-    return False
 
 
 def verbose_iterator(

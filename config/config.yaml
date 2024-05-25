@@ -1,5 +1,5 @@
 defaults:
-  - model: bert
+  - model: catboost
   - _self_
 
 random_seed: 42
@@ -12,5 +12,5 @@ inference:
   n_predictions: 5
   n_candidates: 10
 
-  prefer_saved_matrix: true
+  prefer_saved_matrix: false
   references_embeddings_save_path: "model_weights/references_embeddings.pth"

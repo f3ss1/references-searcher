@@ -11,6 +11,7 @@ class InferenceArxivDataset(Dataset):
         self,
         object_to_return: pd.DataFrame | torch.Tensor,
         mode: Literal["classification", "embeddings"] = "classification",
+        title_process_mode: Literal["separate", "combined"] = "combined",
         tokenizer: PreTrainedTokenizer | None = None,
     ):
         super(InferenceArxivDataset, self).__init__()
@@ -21,6 +22,7 @@ class InferenceArxivDataset(Dataset):
 
         self.embeddings_mode = self._validate_and_process_mode(mode)
         self.object_to_return = object_to_return
+        self.title_process_mode = title_process_mode
 
     def __getitem__(
         self,
@@ -50,124 +52,68 @@ class InferenceArxivDataset(Dataset):
         self.embeddings_mode = self._validate_and_process_mode(new_mode)
         self.object_to_return = new_object_to_return
 
-    def _collate_fn(
-        self,
-        batch_data: list,
-        title_process_mode: Literal["separate", "combined"] = "separate",
-    ) -> dict[str, BatchEncoding]:
+    def _collate_fn(self, batch_data: list) -> dict[str, BatchEncoding]:
         return (
-            self._embedding_collate_fn(batch_data, title_process_mode)
+            self._embedding_collate_fn(batch_data)
             if self.embeddings_mode
-            else self._classification_collate_fn(batch_data, title_process_mode)
+            else self._classification_collate_fn(batch_data)
         )
 
     def _classification_collate_fn(
         self,
         batch_data: list,
-        title_process_mode: Literal["separate", "combined"] = "separate",
     ) -> dict[str, BatchEncoding]:
         paper_abstracts = [x["paper_abstract"] for x in batch_data]
         paper_titles = [x["paper_title"] for x in batch_data]
         reference_abstracts = [x["reference_abstract"] for x in batch_data]
         reference_titles = [x["reference_title"] for x in batch_data]
 
-        # TODO: add reference features
-        if title_process_mode == "separate":
-            paper_abstracts_encodings = self.tokenizer(
-                paper_abstracts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            paper_titles_encodings = self.tokenizer(
-                paper_titles,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            reference_abstracts_encodings = self.tokenizer(
-                reference_abstracts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            reference_titles_encodings = self.tokenizer(
-                reference_titles,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            encodings = {
-                "paper_text": paper_abstracts_encodings,
-                "paper_title": paper_titles_encodings,
-                "reference_text": reference_abstracts_encodings,
-                "reference_title": reference_titles_encodings,
-                # "reference_features": reference_features,
-            }
-            return encodings
+        encodings = {}
 
-        elif title_process_mode == "combined":
-            paper_encodings = self.tokenizer(
-                paper_titles,
-                paper_abstracts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            reference_encodings = self.tokenizer(
-                reference_titles,
-                reference_abstracts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            encodings = {
-                "paper_text": paper_encodings,
-                "reference_text": reference_encodings,
-                # "reference_features": reference_features,
-            }
-            return encodings
-
+        if self.title_process_mode == "separate":
+            items_to_encode = [[paper_abstracts], [paper_titles], [reference_abstracts], [reference_titles]]
+            item_names = ["paper_text", "paper_title", "reference_text", "reference_title"]
+        elif self.title_process_mode == "combined":
+            items_to_encode = [[paper_titles, paper_abstracts], [reference_titles, reference_abstracts]]
+            item_names = ["paper_text", "reference_text"]
         else:
             raise ValueError("The mode of the title processing should be either 'separate' or 'combined'!")
+
+        for item_to_encode, item_name in zip(items_to_encode, item_names, strict=True):
+            item_encoding = self.tokenizer(
+                *item_to_encode,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+            )
+            encodings[item_name] = item_encoding
+
+        return encodings
 
     def _embedding_collate_fn(
         self,
         batch_data: list,
-        title_process_mode: Literal["separate", "combined"] = "separate",
     ) -> dict[str, BatchEncoding]:
         abstracts = [x["abstract"] for x in batch_data]
         titles = [x["title"] for x in batch_data]
 
-        if title_process_mode == "separate":
-            abstract_encodings = self.tokenizer(
-                abstracts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            titles_encodings = self.tokenizer(
-                titles,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            encodings = {
-                "paper_text": abstract_encodings,
-                "paper_title": titles_encodings,
-            }
-        elif title_process_mode == "combined":
-            encodings = self.tokenizer(
-                titles,
-                abstracts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
-            encodings = {
-                "paper_text": encodings,
-            }
+        encodings = {}
+        if self.title_process_mode == "separate":
+            items_to_encode = [[abstracts], [titles]]
+            item_names = ["paper_text", "paper_title"]
+        elif self.title_process_mode == "combined":
+            items_to_encode = [[abstracts, titles]]
+            item_names = ["paper_text"]
         else:
             raise ValueError("The mode of the title processing should be either 'separate' or 'combined'!")
+
+        for item_to_encode, item_name in zip(items_to_encode, item_names, strict=True):
+            item_encoding = self.tokenizer(
+                *item_to_encode,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+            )
+            encodings[item_name] = item_encoding
 
         return encodings

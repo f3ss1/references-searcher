@@ -1,7 +1,10 @@
-from references_searcher.pipelines.bert_pipelines import bert_pipeline
-from .catboost_pipeline import catboost_pipeline
+from .base_pipeline import BasePipeline
+from .bert_pipeline import BertPipeline
+from .catboost_pipeline import CatboostPipeline
+
 
 __all__ = [
-    "bert_pipeline",
-    "catboost_pipeline",
+    "BasePipeline",
+    "BertPipeline",
+    "CatboostPipeline",
 ]

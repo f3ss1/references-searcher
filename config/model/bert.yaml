@@ -22,6 +22,7 @@ pretrain:
   save_path: "model_weights/pretrained_bert_core.pth"
 
 train:
+  dataset_mode: "distance_based_negative_sampling"
   dataloaders:
     num_workers: 4
     pin_memory: true
@@ -33,7 +34,7 @@ train:
     val_size: 0.2
   n_epochs: 2
   use_triplet_pretrain: true
-  save_path: "model_weights/pretrained_bert_model.pth"
+  save_path: "model_weights/new_pretrained_bert_model.pth"
 
 inference:
   batch_size: 4

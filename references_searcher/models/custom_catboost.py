@@ -16,6 +16,7 @@ class CustomCatboostClassifier:
         self,
         text_features: list[str] | None = None,
         task_type: Literal["CPU", "GPU"] = "GPU",
+        random_state: int = 42,
     ) -> None:
         if task_type not in ["CPU", "GPU"]:
             raise AttributeError(f"Unsupported task_type: {task_type}!")
@@ -26,8 +27,9 @@ class CustomCatboostClassifier:
         self.catboost_model = CatBoostClassifier(
             text_features=text_features,
             task_type=task_type,
+            random_state=random_state,
         )
-        self.vectorizer = Word2VecEmbeddings()
+        self.vectorizer = Word2VecEmbeddings(random_seed=random_state)
 
     def fit(
         self,

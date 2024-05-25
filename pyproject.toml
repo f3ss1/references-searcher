@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "citations_searcher"
+name = "references_searcher"
 # Version changes automatically
 version = "1.0.0"
-description = "Searches for citations of other papers in yours."
+description = "Searches for references of other papers in yours."
 
 authors = [
     "Sergei Zakharov <thesdzakharov@gmail.com>"
@@ -59,7 +59,7 @@ target-version = ["py310"]
 fix = true
 
 lint.select = ["ALL"]
-lint.ignore = ["I","EM","FBT","TRY003","S101","D101","D102","D103","D104","D105","G004","D107","D211","D213","FA102","ANN101", "FIX002", "TD002", "TD003"]
+lint.ignore = ["I","EM","FBT","TRY003","S101","D101","D102","D103","D104","D105","G004","D107","D211","D213","FA102", "ANN002", "ANN003", "ANN101", "ANN102", "FIX002", "TD002", "TD003"]
 
 lint.fixable = ["ALL"]
 lint.unfixable = ["F841"]

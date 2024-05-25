@@ -1,6 +1,10 @@
 type: catboost
 save_prefix: "model_weights/pretrained_catboost"
 
+batch_size: 100
+
+use_watcher: false
+
 data:
   val_size: 0.2
   cutoff: null

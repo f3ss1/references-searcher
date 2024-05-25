@@ -5,6 +5,8 @@ from nltk.corpus import stopwords as nltk_stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk.tag import PerceptronTagger
 
+from references_searcher.utils import log_with_message, verbose_iterator
+
 
 class BasicPreprocessor:
     ALPHANUMERIC_PATTERN = re.compile(r"[^a-z0-9 ]")
@@ -19,13 +21,22 @@ class BasicPreprocessor:
     def fit(self, **kwargs):
         pass
 
+    @log_with_message("preprocessing sentences", log_level="DEBUG")
     def transform(
         self,
         sentences: str | list[str],
+        verbose: bool = True,
     ) -> list[str] | list[list[str]]:
         if isinstance(sentences, str):
             sentences = [sentences]
-        result = [self._transform_sentence(sentence) for sentence in sentences]
+
+        result = []
+        for sentence in verbose_iterator(
+            sentences,
+            verbose=verbose,
+            desc="Preprocessing sentences",
+        ):
+            result.append(self._transform_sentence(sentence))
 
         if len(result) == 1:
             return result[0]
