@@ -41,6 +41,7 @@ class Word2VecEmbeddings:
             workers=self.n_workers,
             min_count=self.min_count,
             seed=self.random_seed,
+            sg=1,
         )
 
     @log_with_message("constructing embeddings with word2vec model", log_level="DEBUG")

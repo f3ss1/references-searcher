@@ -17,7 +17,7 @@ class CustomBert(nn.Module):
         super(CustomBert, self).__init__()
         if title_process_mode not in ["separate", "combined"]:
             raise ValueError("The mode of the title processing should be either 'separate' or 'combined'!")
-        self.concatenate_title = title_process_mode == "combined"
+        self.concatenate_title = title_process_mode == "separate"
 
         self.bert = BertModel.from_pretrained(
             bert_model_name,

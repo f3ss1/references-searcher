@@ -1,5 +1,5 @@
 defaults:
-  - model: catboost
+  - model: bert
   - _self_
 
 random_seed: 42
@@ -8,9 +8,9 @@ use_cuda_for_train: true
 evaluate_at_k: true
 
 inference:
-  use_cuda_for_inference: true
-  n_predictions: 5
-  n_candidates: 10
+  use_cuda_for_inference: false
+  n_predictions: 20
+  n_candidates: 1000
 
-  prefer_saved_matrix: false
+  prefer_saved_matrix: true
   references_embeddings_save_path: "model_weights/references_embeddings.pth"

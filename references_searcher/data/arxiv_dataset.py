@@ -30,6 +30,7 @@ class ArxivDataset(Dataset):
         references_arxiv_id_to_index_mapping: dict[str, int] | None = None,
         title_process_mode: Literal["separate", "combined"] = "combined",
         return_target: bool = True,
+        n_negative: int = 1,
         tokenizer: PreTrainedTokenizer | None = None,
         seed: int = 42,
     ):
@@ -43,6 +44,7 @@ class ArxivDataset(Dataset):
         self.negative_pairs = negative_pairs
         self.references_metadata = references_metadata
         self.negative_probability_matrix = negative_probability_matrix
+        self.n_negative = n_negative
 
         self.paper_arxiv_id_to_index_mapping = paper_arxiv_id_to_index_mapping
         self.index_to_paper_arxiv_id_mapping = (
@@ -71,7 +73,7 @@ class ArxivDataset(Dataset):
         elif self.mode == "fixed_negative_sampling":
             return len(self.positive_pairs) + len(self.negative_pairs)
         else:
-            return 2 * len(self.positive_pairs)
+            return len(self.positive_pairs) * (1 + self.n_negative)
 
     def validate_mode(
         self,

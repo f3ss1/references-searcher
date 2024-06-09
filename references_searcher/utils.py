@@ -1,6 +1,8 @@
 from typing import Literal
+import psutil
 
 from pathlib import Path
+import re
 import torch
 import numpy as np
 import random
@@ -8,13 +10,10 @@ from contextlib import ContextDecorator
 from functools import wraps
 import time
 from tqdm import tqdm
-import hydra
-from omegaconf import DictConfig, OmegaConf
 
 from collections.abc import Hashable
 
 from references_searcher import logger
-from references_searcher.constants import PROJECT_ROOT
 
 
 class log_with_message(ContextDecorator):
@@ -60,9 +59,12 @@ class log_with_message(ContextDecorator):
         return wrapped
 
 
-@hydra.main(version_base=None, config_path=PROJECT_ROOT / "config", config_name="config")
-def get_config(config: DictConfig) -> dict:
-    return OmegaConf.to_container(config, resolve=True)
+def title_case(sentence: str):
+    """Convert a string to title case, with exceptions for small words."""
+    small_words = re.compile(r"\b(of|and|the|in|for|on|with|a|an|to|at|by|from|but|is|are|or)\b", re.IGNORECASE)
+    result = sentence.title()  # Convert to title case
+    result = small_words.sub(lambda match: match.group(0).lower(), result)
+    return result[0].upper() + result[1:]
 
 
 def verbose_iterator(
@@ -159,3 +161,20 @@ def ensure_list(
         return [required_to_be_a_list]
 
     return list(required_to_be_a_list)
+
+
+def memory_info():
+    memory = psutil.virtual_memory()
+
+    total_memory = memory.total
+    available_memory = memory.available
+    used_memory = memory.used
+    free_memory = memory.free
+
+    result = (
+        f"Total Memory: {total_memory / (1024 ** 3):.2f} GB"
+        f"\nAvailable Memory: {available_memory / (1024 ** 3):.2f} GB"
+        f"\nUsed Memory: {used_memory / (1024 ** 3):.2f} GB"
+        f"\nFree Memory: {free_memory / (1024 ** 3):.2f} GB"
+    )
+    return result

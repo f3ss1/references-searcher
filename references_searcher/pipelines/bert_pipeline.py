@@ -109,7 +109,9 @@ class BertPipeline(BasePipeline):
         # Load the model
         model = CustomBert(**config["model"]["bert_model"])
         if load_triplet_pretrained_bert:
-            model.bert.load_state_dict(torch.load(PROJECT_ROOT / config["model"]["pretrain"]["save_path"]))
+            model.bert.load_state_dict(
+                torch.load(PROJECT_ROOT / config["model"]["pretrain"]["save_path"], map_location=device),
+            )
         model.to(device)
 
         # Dataloaders creation logic
@@ -134,6 +136,7 @@ class BertPipeline(BasePipeline):
                 train_negative_df,
                 val_positive_df,
                 val_negative_df,
+                **model_train_config["dataloaders"],
             )
 
         elif model_train_config["dataset_mode"] in ["uniform_negative_sampling", "distance_based_negative_sampling"]:
@@ -177,6 +180,7 @@ class BertPipeline(BasePipeline):
                 val_positive_df=val_positive_df,
                 val_negative_probability_matrix=val_negative_probability_matrix,
                 random_state=config["random_seed"],
+                n_negative=model_train_config["n_negative"],
                 **model_train_config["dataloaders"],
             )
         else:
@@ -413,6 +417,7 @@ class BertPipeline(BasePipeline):
         val_positive_df: pd.DataFrame | None = None,
         val_negative_probability_matrix: torch.Tensor | None = None,
         random_state: int = 42,
+        n_negative: int = 1,
         **kwargs,
     ) -> tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader] | tuple[torch.utils.data.DataLoader, None]:
         train_dataset = ArxivDataset(
@@ -424,6 +429,7 @@ class BertPipeline(BasePipeline):
             references_arxiv_id_to_index_mapping=references_arxiv_id_to_index_mapping,
             title_process_mode=title_process_mode,
             seed=random_state,
+            n_negative=n_negative,
         )
         train_dataloader = DataLoader(
             train_dataset,
@@ -441,6 +447,7 @@ class BertPipeline(BasePipeline):
                 paper_arxiv_id_to_index_mapping=paper_arxiv_id_to_index_mapping,
                 references_arxiv_id_to_index_mapping=references_arxiv_id_to_index_mapping,
                 title_process_mode=title_process_mode,
+                n_negative=n_negative,
                 seed=random_state,
             )
             val_dataloader = DataLoader(

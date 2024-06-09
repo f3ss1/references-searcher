@@ -10,6 +10,54 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      dockerfile: ./web_app/Dockerfile
+    volumes:
+      - static_data:/static
+    depends_on:
+      postgres:
+        condition: service_healthy
+#      celery:
+#        condition: service_started
+    environment:
+      - RUNNING_IN_DOCKER=true
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_data:/static
+    depends_on:
+      web:
+        condition: service_started
+
+#  redis:
+#    image: redis
+#
+#  celery:
+#    build:
+#      dockerfile: ./web_app/Dockerfile
+#    command: /bin/sh -c "cd web_app && celery -A main worker --loglevel=info"
+#    depends_on:
+#      redis:
+#        condition: service_started
+#    environment:
+#      - RUNNING_IN_DOCKER=true
+#    env_file:
+#      - .env
 
 volumes:
   postgres_data:
+  static_data:

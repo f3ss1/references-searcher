@@ -2,39 +2,40 @@ type: bert
 
 bert_model:
   dropout_prob: 0.1
-  title_process_mode: "separate"
+  title_process_mode: "combined"
   bert_model_name: "bert-base-uncased"
   mode: finetune
 
-use_watcher: false
+use_watcher: true
 
 pretrain:
-  execute: true
+  execute: false
   dataloader:
     num_workers: 4
     pin_memory: true
     batch_size: 4
   optimizer:
-    lr: 0.00001
+    lr: 0.000005
   data:
     cutoff: null
-  n_epochs: 2
-  save_path: "model_weights/pretrained_bert_core.pth"
+  n_epochs: 4
+  save_path: "model_weights/lr_05_pretrained_bert_core.pth"
 
 train:
   dataset_mode: "distance_based_negative_sampling"
+  n_negative: 9
   dataloaders:
     num_workers: 4
     pin_memory: true
     batch_size: 4
   optimizer:
-    lr: 0.00001
+    lr: 0.000005
   data:
     cutoff: 50000
     val_size: 0.2
-  n_epochs: 2
+  n_epochs: 4
   use_triplet_pretrain: true
-  save_path: "model_weights/new_pretrained_bert_model.pth"
+  save_path: "model_weights/inference_pretrained_bert_model.pth"
 
 inference:
   batch_size: 4

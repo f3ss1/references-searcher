@@ -9,7 +9,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from references_searcher.models import CustomCatboostClassifier, CustomBert
-from references_searcher.utils import verbose_iterator, generate_device, log_with_message
+from references_searcher.utils import verbose_iterator, generate_device, log_with_message, title_case
 from references_searcher.data import InferenceArxivDataset
 from references_searcher.exceptions import NotFittedError
 from references_searcher.constants import PROJECT_ROOT
@@ -147,7 +147,11 @@ class Inferencer:
         arxiv_ids = list(self.references.index)
         if return_title:
             titles = self.references["title"].tolist()
-            result = [[ReferencePrediction(arxiv_ids[index], titles[index]) for index in row] for row in predictions]
+            capitalized_titles = [title_case(x) for x in titles]
+            result = [
+                [ReferencePrediction(arxiv_ids[index], capitalized_titles[index]) for index in row]
+                for row in predictions
+            ]
 
         else:
             result = [[ReferencePrediction(arxiv_ids[index]) for index in row] for row in predictions]

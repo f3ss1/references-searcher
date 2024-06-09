@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Reference Predictor</title>
-</head>
-<body>
+{% extends 'references_searcher_inference/base.html' %}
+
+{% block body %}
+<div class="form-container">
     <h1>Predict References</h1>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Predict</button>
     </form>
-</body>
-</html>
+</div>
+{% endblock %}
