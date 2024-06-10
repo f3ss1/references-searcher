@@ -10,4 +10,4 @@ python manage.py collectstatic --noinput
 
 echo "Starting Django application..."
 export RUNNING_SERVER=true
-gunicorn -c gunicorn_config.py main.wsgi:application
+gunicorn --workers 4 --bind 0.0.0.0:8000 main.wsgi:application

@@ -9,6 +9,7 @@ from references_searcher.constants import CONFIG, PROJECT_ROOT
 from references_searcher.utils import generate_device
 from references_searcher.data.sql import DatabaseInterface
 from references_searcher.models import CustomBert, CustomCatboostClassifier, Inferencer
+from references_searcher import logger
 
 transformers.logging.set_verbosity_error()
 warnings.simplefilter("ignore", FutureWarning)
@@ -21,7 +22,7 @@ class ReferenceSearcherInferenceConfig(AppConfig):
     has_run = False
 
     def ready(self):
-        if os.environ.get("RUN_MAIN") and not self.has_run:
+        if os.environ.get("RUNNING_SERVER") and not self.has_run:
             database_interface = DatabaseInterface()
             metadata_df = database_interface.get_references_metadata()
 
@@ -29,7 +30,9 @@ class ReferenceSearcherInferenceConfig(AppConfig):
                 device = generate_device(CONFIG["inference"]["use_cuda_for_inference"])
 
                 model = CustomBert(**CONFIG["model"]["bert_model"])
-                model.load_state_dict(torch.load(PROJECT_ROOT / CONFIG["model"]["train"]["save_path"]))
+                model.load_state_dict(
+                    torch.load(PROJECT_ROOT / CONFIG["model"]["train"]["save_path"], map_location=device),
+                )
                 model.eval()
                 model.to(device)
 
@@ -38,6 +41,7 @@ class ReferenceSearcherInferenceConfig(AppConfig):
                     batch_size=CONFIG["model"]["inference"]["batch_size"],
                     n_predictions=CONFIG["inference"]["n_predictions"],
                     n_candidates=CONFIG["inference"]["n_candidates"],
+                    device=device,
                 )
 
             else:
@@ -57,5 +61,6 @@ class ReferenceSearcherInferenceConfig(AppConfig):
                 prefer_saved_matrix=CONFIG["inference"]["prefer_saved_matrix"],
                 references_embeddings_save_path=CONFIG["inference"]["references_embeddings_save_path"],
             )
+            logger.info("Finished processing inferencer, ready to make predictions.")
             self.__class__.inferencer = inferencer
             self.__class__.has_run = True
