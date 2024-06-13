@@ -1,0 +1,27 @@
+{% extends 'references_searcher_inference/base.html' %}
+
+{% block head %}
+<script>
+    function checkStatus() {
+        fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.ready) {
+                    window.location.href = "/";  // Redirect to the main page or reload the current page
+                } else {
+                    setTimeout(checkStatus, 1000);  // Check again after 1 second
+                }
+            });
+    }
+    window.onload = function() {
+        checkStatus();
+    };
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="results-container">
+    <h1>Please wait!</h1>
+</div>
+{% endblock %}
+
