@@ -25,6 +25,13 @@ class ReferencePrediction:
     def arxiv_link(self):
         return f"https://arxiv.org/abs/{self.arxiv_id}"
 
+    def to_dict(self):
+        return {"arxiv_id": self.arxiv_id, "title": self.title}
+
+    @classmethod
+    def from_dict(cls, source_dict):
+        return cls(**source_dict)
+
 
 class Inferencer:
     def __init__(
@@ -181,7 +188,7 @@ class Inferencer:
             self.dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            num_workers=4,
+            num_workers=0,
             pin_memory=True,
         )
         result = []
@@ -260,7 +267,7 @@ class Inferencer:
             self.dataset,
             shuffle=False,
             batch_size=self.batch_size,
-            num_workers=4,
+            num_workers=0,
             pin_memory=True,
             collate_fn=lambda x: self.dataset._collate_fn(x),
         )

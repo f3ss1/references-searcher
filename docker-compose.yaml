@@ -25,8 +25,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-#      celery:
-#        condition: service_started
+      celery:
+        condition: service_started
     environment:
       - RUNNING_IN_DOCKER=true
     env_file:
@@ -43,20 +43,33 @@ services:
       web:
         condition: service_started
 
-#  redis:
-#    image: redis
-#
-#  celery:
-#    build:
-#      dockerfile: ./web_app/Dockerfile
-#    command: /bin/sh -c "cd web_app && celery -A main worker --loglevel=info"
-#    depends_on:
-#      redis:
-#        condition: service_started
-#    environment:
-#      - RUNNING_IN_DOCKER=true
-#    env_file:
-#      - .env
+  redis:
+    image: redis
+
+  celery:
+    build:
+      dockerfile: ./web_app/Dockerfile
+    command: /bin/sh -c "cd web_app && celery -A main worker --loglevel=debug --pool=solo"
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      - RUNNING_IN_DOCKER=true
+      - CELERY_WORKER=true
+    env_file:
+      - .env
+
+  flower:
+    build:
+      dockerfile: ./web_app/Dockerfile
+    command: /bin/sh -c "cd web_app && celery -A main flower --port=5555 --url-prefix=flower"
+    ports:
+      - "5555:5555"
+    environment:
+      - FLOWER_BASIC_AUTH=${FLOWER_USER}:${FLOWER_PASSWORD}
+    depends_on:
+      - redis
+      - celery
 
 volumes:
   postgres_data:
